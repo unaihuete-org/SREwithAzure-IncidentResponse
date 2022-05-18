@@ -1,0 +1,22 @@
+
+name: Trigger Logic App when issue closed
+
+on: 
+  issues:
+    types: [closed]
+
+jobs:
+  trigger-logicapp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: echo event
+        env: 
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+    
+    # trigger logic app and provide parameter
+
+      - name: trigger logic app
+        run: |
+          curl -X POST "https://prod-119.westeurope.logic.azure.com:443/workflows/5d8d5676fbd645678052d326e9e12a6e/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=${{ secrets.LOGICAPP_KEY }}" -H "Content-Type: application/json" -d '{ "Issue_title": "${{ github.event.issue.title }}", "Issue_link": "${{ github.event.issue.html_url}}", "Issue_comments_url ": "${{ github.event.issue.comments_url }}"}'
+    
