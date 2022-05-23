@@ -1,0 +1,356 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Create_a_channel": {
+                "inputs": {
+                    "body": {
+                        "displayName": "@{substring(triggerBody()?['data']?['essentials']?['alertId'], sub(length(triggerBody()?['data']?['essentials']?['alertId']),36),36)}"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['teams']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/beta/groups/@{encodeURIComponent('76a5c577-74ef-43ea-a31f-e6be95c32f43')}/channels"
+                },
+                "runAfter": {},
+                "runtimeConfiguration": {
+                    "staticResult": {
+                        "name": "Create_a_channel0",
+                        "staticResultOptions": "Disabled"
+                    }
+                },
+                "type": "ApiConnection"
+            },
+            "Create_an_issue": {
+                "inputs": {
+                    "body": {
+                        "body": "@{triggerBody()}",
+                        "title": "@{triggerBody()?['data']?['essentials']?['alertRule']} @{substring(triggerBody()?['data']?['essentials']?['alertId'], sub(length(triggerBody()?['data']?['essentials']?['alertId']),36),36)}"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['github']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/repos/@{encodeURIComponent('unaihuete-org')}/@{encodeURIComponent('SREwithAzure-IncidentResponse')}/issues"
+                },
+                "runAfter": {
+                    "Create_a_channel": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "For_each": {
+                "actions": {
+                    "Adaptive_card_posted_for_Alert": {
+                        "inputs": {
+                            "body": {
+                                "messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.0\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Azure Alert: @{triggerBody()?['data']?['essentials']?['alertRule']}\",\n            \"id\": \"Title\",\n            \"spacing\": \"Medium\",\n            \"horizontalAlignment\": \"Center\",\n            \"size\": \"ExtraLarge\",\n            \"weight\": \"Bolder\",\n            \"color\": \"Accent\"\n        },\n        {\n                            \"type\": \"Image\",\n                            \"style\": \"Person\",\n                            \"url\": \"https://pbs.twimg.com/profile_images/1020021942064066560/lomkQ6qZ_400x400.jpg\",\n                            \"size\": \"Medium\"\n           },\n           {\n                            \"type\": \"TextBlock\",\n                            \"weight\": \"Bolder\",\n                            \"text\": \"Alert Id: \",\n                            \"wrap\": true\n            },\n            {\n                            \"type\": \"TextBlock\",\n                            \"spacing\": \"None\",\n                            \"text\": \"@{triggerBody()?['data']?['essentials']?['alertId']}\",\n                            \"isSubtle\": true,\n                            \"wrap\": true\n              },\n              {\n                            \"type\": \"TextBlock\",\n                            \"weight\": \"Bolder\",\n                            \"text\": \"Severity\",\n                            \"wrap\": true\n               },\n              {\n                            \"type\": \"TextBlock\",\n                            \"spacing\": \"None\",\n                            \"text\": \"@{triggerBody()?['data']?['essentials']?['severity']}\",\n                            \"isSubtle\": true,\n                            \"wrap\": true\n                },\n               {\n                            \"type\": \"TextBlock\",\n                            \"weight\": \"Bolder\",\n                            \"text\": \"Fired at\",\n                            \"wrap\": true\n               },\n              {\n                            \"type\": \"TextBlock\",\n                            \"spacing\": \"None\",\n                            \"text\": \" @{triggerBody()?['data']?['essentials']?['firedDateTime']}\",\n                            \"isSubtle\": true,\n                            \"wrap\": true\n                }\n    ]\n}",
+                                "recipient": {
+                                    "channelId": "@body('Create_a_channel')?['id']",
+                                    "groupId": "76a5c577-74ef-43ea-a31f-e6be95c32f43"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/v1.0/teams/conversation/adaptivecard/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    },
+                    "Adaptive_card_posted_for_GitHub_Issue": {
+                        "inputs": {
+                            "body": {
+                                "messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.0\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"GitHub Issue for Incident\",\n            \"id\": \"Title\",\n            \"spacing\": \"Medium\",\n            \"horizontalAlignment\": \"Center\",\n            \"size\": \"ExtraLarge\",\n            \"weight\": \"Bolder\",\n            \"color\": \"Accent\"\n        },\n        {\n                            \"type\": \"Image\",\n                            \"style\": \"Person\",\n                            \"url\": \"https://shan-96.github.io/Resume/images/github_white.png\",\n                            \"size\": \"Medium\"\n           },\n           {\n                            \"type\": \"TextBlock\",\n                            \"weight\": \"Bolder\",\n                            \"text\": \"Issue Url \",\n                            \"wrap\": true\n            },\n            {\n                            \"type\": \"TextBlock\",\n                            \"spacing\": \"None\",\n                            \"text\": \"[GitHub Issue](https://github.com/unaihuete-org/SREwithAzure-IncidentResponse/issues/@{body('Create_an_issue')?['number']})\",\n                            \"isSubtle\": true,\n                            \"wrap\": true\n              }\n              \n    ]\n}",
+                                "recipient": {
+                                    "channelId": "@body('Create_a_channel')?['id']",
+                                    "groupId": "76a5c577-74ef-43ea-a31f-e6be95c32f43"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/v1.0/teams/conversation/adaptivecard/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                        },
+                        "runAfter": {
+                            "Adaptive_card_posted_for_Alert": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "foreach": "@triggerBody()?['data']?['alertContext']?['condition']?['allOf']",
+                "runAfter": {
+                    "Create_an_issue": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "For_each_2": {
+                "actions": {
+                    "Get_an_@mention_token_for_a_user": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/v1.0/users/@{encodeURIComponent(items('For_each_2')?['userId'])}"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    },
+                    "Mention_user_ON-CALL": {
+                        "inputs": {
+                            "body": {
+                                "messageBody": "<p>Please @{body('Get_an_@mention_token_for_a_user')?['atMention']} take a look at the mentioned incident and manage the status using GitHub :)&nbsp;</p>",
+                                "recipient": {
+                                    "channelId": "@body('Create_a_channel')?['id']",
+                                    "groupId": "76a5c577-74ef-43ea-a31f-e6be95c32f43"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/beta/teams/conversation/message/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                        },
+                        "runAfter": {
+                            "Get_an_@mention_token_for_a_user": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "foreach": "@body('List_all_Shifts')?['value']",
+                "runAfter": {
+                    "List_all_Shifts": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "List_all_Shifts": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['shifts']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v1.0/teams/@{encodeURIComponent('76a5c577-74ef-43ea-a31f-e6be95c32f43')}/schedule/shifts",
+                    "queries": {
+                        "endTime": "@{addDays(utcNow(),1)}",
+                        "startTime": "@{addDays(utcNow(),-1)}"
+                    }
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "staticResults": {
+            "Create_a_channel0": {
+                "outputs": {
+                    "headers": {},
+                    "statusCode": "OK"
+                },
+                "status": "Succeeded"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "data": {
+                                "properties": {
+                                    "alertContext": {
+                                        "properties": {
+                                            "condition": {
+                                                "properties": {
+                                                    "allOf": {
+                                                        "items": {
+                                                            "properties": {
+                                                                "dimensions": {
+                                                                    "items": {
+                                                                        "properties": {
+                                                                            "name": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "value": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "name",
+                                                                            "value"
+                                                                        ],
+                                                                        "type": "object"
+                                                                    },
+                                                                    "type": "array"
+                                                                },
+                                                                "metricName": {
+                                                                    "type": "string"
+                                                                },
+                                                                "metricNamespace": {
+                                                                    "type": "string"
+                                                                },
+                                                                "metricValue": {
+                                                                    "type": "number"
+                                                                },
+                                                                "operator": {
+                                                                    "type": "string"
+                                                                },
+                                                                "threshold": {
+                                                                    "type": "string"
+                                                                },
+                                                                "timeAggregation": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "metricName",
+                                                                "metricNamespace",
+                                                                "operator",
+                                                                "threshold",
+                                                                "timeAggregation",
+                                                                "dimensions",
+                                                                "metricValue"
+                                                            ],
+                                                            "type": "object"
+                                                        },
+                                                        "type": "array"
+                                                    },
+                                                    "windowSize": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "conditionType": {
+                                                "type": "string"
+                                            },
+                                            "properties": {}
+                                        },
+                                        "type": "object"
+                                    },
+                                    "essentials": {
+                                        "properties": {
+                                            "alertContextVersion": {
+                                                "type": "string"
+                                            },
+                                            "alertId": {
+                                                "type": "string"
+                                            },
+                                            "alertRule": {
+                                                "type": "string"
+                                            },
+                                            "alertTargetIDs": {
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            },
+                                            "configurationItems": {
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "essentialsVersion": {
+                                                "type": "string"
+                                            },
+                                            "firedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "monitorCondition": {
+                                                "type": "string"
+                                            },
+                                            "monitoringService": {
+                                                "type": "string"
+                                            },
+                                            "originAlertId": {
+                                                "type": "string"
+                                            },
+                                            "resolvedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "severity": {
+                                                "type": "string"
+                                            },
+                                            "signalType": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "schemaId": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "github": {
+                    "connectionId": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/resourceGroups/SREwithAzure/providers/Microsoft.Web/connections/github",
+                    "connectionName": "github",
+                    "id": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/providers/Microsoft.Web/locations/westeurope/managedApis/github"
+                },
+                "shifts": {
+                    "connectionId": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/resourceGroups/SREwithAzure/providers/Microsoft.Web/connections/shifts",
+                    "connectionName": "shifts",
+                    "id": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/providers/Microsoft.Web/locations/westeurope/managedApis/shifts"
+                },
+                "teams": {
+                    "connectionId": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/resourceGroups/SREwithAzure/providers/Microsoft.Web/connections/teams",
+                    "connectionName": "teams",
+                    "id": "/subscriptions/16169bdf-109c-4eb7-9963-3d01e2352774/providers/Microsoft.Web/locations/westeurope/managedApis/teams"
+                }
+            }
+        }
+    }
+}
